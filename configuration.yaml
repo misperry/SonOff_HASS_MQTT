@@ -1,0 +1,10 @@
+switch:
+    - platform: mqtt
+      mqtt name: "Switch1"
+      state_topic: "ha/switch1"
+      command_topic: "ha/switch1"
+      qos: 0
+      payload_on: "ON"
+      payload_off: "OFF"
+      optimistic:
+      false retain: true
