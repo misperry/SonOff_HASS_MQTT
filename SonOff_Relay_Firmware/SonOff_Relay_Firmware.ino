@@ -1,3 +1,21 @@
+/*
+ *  File Name: SonOff_Relay_Firmware.ino
+ *  
+ *  Application: HomeAssistant SonOff Switch
+ *  
+ *  Description: This code is for the SonOff ESP8266 enabled smart
+ *  relay for 120 - 240V applications.  This is the custom firmware to use
+ *  with the Homeassistant system via MQTT packages.  This revision 1.1 comes equipe
+ *  with the ability to connect to GPIO14 and use it as an override switch for local
+ *  control.
+ *  
+ *  Author: M. Sperry - http://www.youtube.com/misperry
+ *  Date: 03/29/2018
+ *  Revision: 1.1
+ *  
+ *  
+ */
+ 
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 
@@ -10,7 +28,8 @@ const char* mqtt_server = "";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
-int SwitchedPin = 12, LEDPin = 13;
+int SwitchedPin = 12, LEDPin = 13, Override = 14, OverrideMem = 0;
+bool HassSwitch = false;
 String switch1;
 String strTopic;
 String strPayload;
@@ -18,7 +37,7 @@ String strPayload;
 void setup_wifi() {
  Serial.begin(115200);
   delay(2000);
- 
+
   // We start by connecting to a WiFi network
  
   Serial.println();
@@ -55,12 +74,14 @@ void callback(char* topic, byte* payload, unsigned int length) {
         Serial.println("ON");
         digitalWrite(SwitchedPin, HIGH);
         digitalWrite(LEDPin, LOW);
+        HassSwitch = true;
       }
     else
       {
         Serial.println("OFF");
         digitalWrite(SwitchedPin, LOW);
         digitalWrite(LEDPin, HIGH);
+        HassSwitch = false;
       }
     }
 }
@@ -75,7 +96,8 @@ void reconnect() {
       Serial.println("connected");
       // Once connected, publish an announcement...
       client.subscribe("ha/#");
-    } else {
+    } 
+    else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
       Serial.println(" try again in 5 seconds");
@@ -99,6 +121,23 @@ void loop()
 {
   if (!client.connected()) {
     reconnect();
+  }
+  if(digitalRead(Override) != OverrideMem && !HassSwitch)
+  {
+    if(digitalRead(Override))
+    {
+      Serial.println("ON");
+      digitalWrite(SwitchedPin, HIGH);
+      digitalWrite(LEDPin, LOW);
+      OverrideMem = 1;
+    }
+    else
+    {
+      Serial.println("OFF");
+      digitalWrite(SwitchedPin, LOW);
+      digitalWrite(LEDPin, HIGH);
+      OverrideMem = 0;
+    }
   }
   client.loop();
 }
